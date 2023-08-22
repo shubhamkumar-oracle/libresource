@@ -1,0 +1,68 @@
+name: Builds
+on:
+  - pull_request
+  - workflow_dispatch
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build 
+    runs-on: ubuntu-20.04
+    steps:
+    - uses: actions/checkout@v3
+    - name: Build with test flag
+      run: |
+        make TEST_FLAG=-DTESTING
+        ls
+    - run: |
+        mkdir artifacts
+    - uses: actions/upload-artifact@master
+      with:
+        name: build-artifacts
+        path: | 
+          *.so
+          *.so.*
+
+
+  cpu-test:
+    name: CPU Test
+    runs-on: ubuntu-20.04
+    needs: build
+    steps:
+    - uses: actions/checkout@v3
+    - uses: actions/download-artifact@master
+      with:
+        name: build-artifacts
+    - name: Run CPU tests
+      run: |
+        ./tests/CPU/cpu.sh
+    - run: ls
+    - uses: actions/upload-artifact@master
+      with:
+        name: run-artifacts
+        path: | 
+          cpu_info.orig
+          cpu_info.txt
+
+  vm-test:
+    name: VM Test
+    runs-on: ubuntu-20.04
+    needs: build
+    steps:
+    - uses: actions/checkout@v3
+    - uses: actions/download-artifact@master
+      with:
+        name: build-artifacts
+    - name: Run VM tests
+      run: |
+        ./tests/VM/vm.sh
+    - run: ls
+    - uses: actions/upload-artifact@master
+      with:
+        name: run-artifacts
+        path: | 
+          vm_info.orig
+          vm_info.txt
+      
